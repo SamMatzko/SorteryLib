@@ -26,22 +26,27 @@ mod tests {
         
         // Create a Sorter instance for testing
         let sorter1 = Sorter {
-            source: File::new("test"),
-            target: File::new("test2"),
-            date_format: String::from(""),
-            date_type: String::from(""),
-            preserve_name: true,
-            exclude_type: vec![String::from("jpg"), String::from("")],
-            only_type: vec![String::from("nothing")]
+            source: source.copy(),
+            target: target.copy(),
+            date_format: String::from("%Y-%m-%d %Hh%Mm%Ss"),
+            date_type: String::from("m"),
+            preserve_name: false,
+            exclude_type: vec![String::from("png")],
+            only_type: vec![String::from("json"), String::from("py")]
         };
 
         // Create a Sorter instance from the json string for testing
-        let sorter2 = Sorter::from_json(json_string, source, target);
+        let sorter2 = Sorter::from_json(json_string, source.copy(), target.copy());
+
+        // Compare the two Sorter instances to make sure that the JSON was parsed
+        // correctly, and that the values match up.
+        assert_eq!(sorter1, sorter2);
     }
 }
 
 /// The sorter struct that sorts the files, and interfaces with it's caller for
 /// progress bar purposes, if desired.
+#[derive(Debug, PartialEq)]
 pub struct Sorter {
     pub source: File,
     pub target: File,
