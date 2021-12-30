@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 mod tests {
 
     use std::{env, fs, path::Path};
-    use super::{ConfigData, File};
+    use super::{ConfigData, File, Join};
     
     #[test]
     /// Test the [`ConfigData`] struct
@@ -39,47 +39,22 @@ mod tests {
         // The variables used for testing
         let path = Path::new("my_file.txt");
         let joined_path = Path::new("my_file.txt/my_file.txt");
-        let file = File::from_path(path);
+        let file = File::from(path);
 
         // Test the methods
         assert!(!file.exists());
         assert_eq!(file.copy(), File { pathbuf: path.to_path_buf() });
-        assert_eq!(File::from_path(path), File { pathbuf: path.to_path_buf() });
-        assert_eq!(File::from_pathbuf(&path.to_path_buf()), File { pathbuf: path.to_path_buf() });
+        assert_eq!(File::from(path), File { pathbuf: path.to_path_buf() });
+        assert_eq!(File::from(&path.to_path_buf()), File { pathbuf: path.to_path_buf() });
         assert_eq!(file.extension(), String::from("txt"));
         assert_eq!(file.file_name(), String::from("my_file.txt"));
         assert_eq!(file.file_stem(), String::from("my_file"));
         assert_eq!(file.join(path), File { pathbuf: joined_path.to_path_buf() });
-        assert_eq!(file.join_string(&String::from("my_file.txt")), File { pathbuf: joined_path.to_path_buf() });
+        assert_eq!(file.join(String::from("my_file.txt")), File { pathbuf: joined_path.to_path_buf() });
         assert_eq!(File::new("my_file.txt"), File { pathbuf: path.to_path_buf() });
         assert_eq!(file.to_path_buf(), path.to_path_buf());
         assert_eq!(file.to_string(), String::from("my_file.txt"));
     }
-}
-
-/// The DateFormat struct, used by DateFormats
-pub struct DateFormat <'a> {
-    pub format: &'a str,
-}
-
-/// The struct containing constants representing different date formats
-pub struct DateFormats;
-impl<'a> DateFormats {
-    const YEAR_MONTH_DAY: DateFormat<'a> = DateFormat { format: "%Y-%m-%d" };
-    const YEAR_MONTH_DAY_HOUR_MINUTE_SECOND: DateFormat<'a> = DateFormat { format: "%Y-%m-%d %Hh%Mm%Ss" };
-}
-
-/// The DateType struct, used by DateTypes
-pub struct DateType<'a> {
-    pub t: &'a str,
-}
-
-/// The struct containing constants representing different date types
-pub struct DateTypes;
-impl<'a> DateTypes {
-    const ACCESSED: DateType<'a> = DateType { t: "a" };
-    const CREATED: DateType<'a> = DateType { t: "c" };
-    const MODIFIED: DateType<'a> = DateType { t: "m" };
 }
 
 /// The struct used for getting the config data from a json file
@@ -109,32 +84,9 @@ impl ConfigData {
     }
 }
 
-/// The struct used for representing file extensions to exclude while sorting
-#[derive(Debug)]
-pub struct ExcludeTypes {
-    types: Vec<String>,
-}
-impl ExcludeTypes {
-
-    /// Create a new instance of ExcludeTypes
-    pub fn new() -> ExcludeTypes {
-        ExcludeTypes { types: vec!(String::from("⌷")) }
-    }
-
-    /// The function that adds a type to the struct.
-    pub fn add_type(mut self, t: String) -> Self {
-        self.types.push(t);
-        self
-    }
-
-    /// Return the types as a [`Vec`]
-    pub fn get_types(&self) -> Vec<String> {
-        let mut vec = Vec::new();
-        for i in 1..self.types.len() - 1 {
-            vec.push(String::from(&self.types[i]));
-        }
-        vec
-    }
+/// Traits used by [`File`]
+pub trait Join<T> {
+    fn join(&self, path:T) -> File;
 }
 
 /// The struct used in all the cross-function path functionality
@@ -148,16 +100,6 @@ impl File {
     /// Return an instance of File with the same path as ours
     pub fn copy(&self) -> File {
         File { pathbuf: PathBuf::from(&self.pathbuf) }
-    }
-
-    /// Return a new instance of [`File`], with `path` as the path.
-    pub fn from_path(path: &Path) -> File {
-        File { pathbuf: path.to_path_buf() }
-    }
-
-    /// Return a new instance of [`File`], with `path` as the path.
-    pub fn from_pathbuf(path: &PathBuf) -> File {
-        File { pathbuf: path.to_path_buf() }
     }
 
     /// Return [`true`] if our path exists
@@ -193,16 +135,6 @@ impl File {
         }
     }
 
-    /// Return the joining of our path and `path` as a [`File`].
-    pub fn join(&self, path: &Path) -> File {
-        File { pathbuf: self.pathbuf.join(path) }
-    }
-
-    /// Return the joining of our path and `path`.
-    pub fn join_string(&self, path: &String) -> File {
-        File { pathbuf: self.pathbuf.join(Path::new(path)) }
-    }
-
     /// Return a new instance of [`File`] from `from`
     pub fn new(from: &str) -> File {
         File { pathbuf: PathBuf::from(from) }
@@ -218,31 +150,46 @@ impl File {
         self.pathbuf.display().to_string()
     }
 }
-
-/// The struct used for representing file extensions to exclusively sort
-#[derive(Debug)]
-pub struct OnlyTypes {
-    types: Vec<String>,
+impl<'f> From<&'f Path> for File {
+    /// Return a new instance of [`File`], with `path` as the path.
+    fn from(path: &Path) -> File {
+        File { pathbuf: path.to_path_buf() }
+    }
 }
-impl OnlyTypes {
-
-    /// Create a new instance of ExcludeTypes
-    pub fn new() -> OnlyTypes {
-        OnlyTypes { types: vec!(String::from("⌷")) }
+impl<'f> From<&'f PathBuf> for File {
+    /// Return a new instance of [`File`], with `path` as the path.
+    fn from(path: &PathBuf) -> File {
+        File { pathbuf: path.to_path_buf() }
     }
-
-    /// The function that adds a type to the struct.
-    pub fn add_type(mut self, t: String) -> Self {
-        self.types.push(t);
-        self
+}
+impl Join<File> for File {
+    fn join(&self, path: File) -> File {
+        let join_start = self.to_path_buf();
+        let join_end = path.to_path_buf();
+        let pathbuf = join_start.join(join_end);
+        File { pathbuf: pathbuf }
     }
-
-    /// Return the types as a [`Vec`]
-    pub fn get_types(&self) -> Vec<String> {
-        let mut vec = Vec::new();
-        for i in 1..self.types.len() - 1 {
-            vec.push(String::from(&self.types[i]));
-        }
-        vec
+}
+impl<'j> Join<&'j Path> for File {
+    fn join(&self, path: &Path) -> File {
+        let join_start = self.to_path_buf();
+        let join_end = path.to_path_buf();
+        let pathbuf = join_start.join(join_end);
+        File { pathbuf: pathbuf }
+    }
+}
+impl<'j> Join<&'j PathBuf> for File {
+    fn join(&self, path: &PathBuf) -> File {
+        let join_start = self.to_path_buf();
+        let pathbuf = join_start.join(path);
+        File { pathbuf: pathbuf }
+    }
+}
+impl Join<String> for File {
+    fn join(&self, path: String) -> File {
+        let join_start = self.to_path_buf();
+        let join_end = PathBuf::from(path);
+        let pathbuf = join_start.join(join_end);
+        File { pathbuf: pathbuf }
     }
 }

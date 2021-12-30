@@ -1,35 +1,76 @@
 mod structs;
 
 use chrono::{DateTime, TimeZone, Utc, Local};
-use std::{fs, path::Path, time::UNIX_EPOCH};
+use std::{path::Path, time::UNIX_EPOCH};
 use structs::*;
 use walkdir::WalkDir;
 
+/// Tests. Each test is named after the function or struct it tests, prefixed with `test_`.
 #[cfg(test)]
 mod tests {
+    use crate::Sorter;
+    use std::{env, fs, path::Path};
+    use super::structs::*;
+
     #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+    fn test_sorter() {
+
+        // The paths to use for testing
+        let current_dir = env::current_dir().expect("Failed to get current dir.");
+        let json_path = current_dir.join(Path::new("template.json"));
+        let source = File::from(&current_dir).join(Path::new("testing"));
+        let target = source.join(Path::new("target"));
+
+        // Get the string from the json file
+        let json_string = fs::read_to_string(json_path).expect("Failed to read json file.");
+        
+        // Create a Sorter instance for testing
+        let sorter1 = Sorter {
+            source: File::new("test"),
+            target: File::new("test2"),
+            date_format: String::from(""),
+            date_type: String::from(""),
+            preserve_name: true,
+            exclude_type: vec![String::from("jpg"), String::from("")],
+            only_type: vec![String::from("nothing")]
+        };
+
+        // Create a Sorter instance from the json string for testing
+        let sorter2 = Sorter::from_json(json_string, source, target);
     }
 }
 
 /// The sorter struct that sorts the files, and interfaces with it's caller for
 /// progress bar purposes, if desired.
-pub struct Sorter<'a> {
+pub struct Sorter {
     pub source: File,
     pub target: File,
-    pub date_format: DateFormat<'a>,
-    pub date_type: DateType<'a>,
+    pub date_format: String,
+    pub date_type: String,
     pub preserve_name: bool,
-    pub exclude_type: ExcludeTypes,
-    pub only_type: OnlyTypes
+    pub exclude_type: Vec<String>,
+    pub only_type: Vec<String>
 }
-impl<'a> Sorter<'a> {
+impl Sorter {
 
     // Class functions
-    pub fn from_json(&self, json: String, source: File, target: File, dry_run: bool) {
-        ConfigData::from_json(&json);
+
+    /// Return a new [`Sorter`] instance, created using the configuration data in
+    /// a JSON string
+    pub fn from_json(json_string: String, source: File, target: File) -> Sorter {
+
+        // Get the data from the JSON string
+        let data = ConfigData::from_json(&json_string);
+
+        Sorter {
+            source: source,
+            target: target,
+            date_format: data.date_format,
+            date_type: data.date_type,
+            preserve_name: data.preserve_name,
+            exclude_type: data.exclude_type,
+            only_type: data.only_type
+        }
     }
 
     // Methods
@@ -132,7 +173,7 @@ impl<'a> Sorter<'a> {
                 num,
                 path.pathbuf.extension().unwrap().to_str().unwrap()
             ));
-            let new_file = File::from_pathbuf(&new_pathbuf);
+            let new_file = File::from(&new_pathbuf);
 
             // Check if it exists, and if so, continue the loop
             if !vec.contains(&new_file) {
@@ -162,7 +203,7 @@ impl<'a> Sorter<'a> {
 
             let entry = entry.unwrap();
             if !entry.metadata().expect("Failed to get dir metadata").is_dir() {
-                if self.is_sortable(&File::from_path(entry.path()), &exclude_type, &only_type) {
+                if self.is_sortable(&File::from(entry.path()), &exclude_type, &only_type) {
                     items_to_sort += 1;
                }
             }
@@ -175,11 +216,11 @@ impl<'a> Sorter<'a> {
             if !entry.metadata().expect("Failed to get dir metadata").is_dir() {
 
                 // The File instance we are sorting
-                let path = File::from_path(entry.path());
+                let path = File::from(entry.path());
 
                 // Make sure that we sort according to the exclude-type and
                 // only-type arguments
-                if self.is_sortable(&File::from_path(entry.path()), &exclude_type, &only_type) {
+                if self.is_sortable(&File::from(entry.path()), &exclude_type, &only_type) {
 
                     let mut new_file = self.get_new_date_path(&target, &path, date_format, date_type, *preserve_name);
 
@@ -229,15 +270,35 @@ impl<'a> Sorter<'a> {
 
     /// The method that runs the sorting algorithm, and sends information through
     /// to the caller if specified.
-    pub fn sort(&self) {
-        // let results = self.get_sorting_results(
-        //     &self.source,
-        //     &self.target,
-        //     self.date_format.format.as_str(),
-        //     self.date_type.t.as_str(),
-        //     &self.preserve_name,
-        //     self.exclude_type,
-        //     self.only_type
-        // );
+    pub fn sort(&self, dry_run: bool) {
+
+        // Convert the exclude_type and only_type values to the tuples that
+        // self.get_sorting_results() takes
+        let exclude_type: (&str, bool) = (
+            &self.exclude_type.join("-"),
+            self.exclude_type.len() > 0
+        );
+        let only_type: (&str, bool) = (
+            &self.only_type.join("-"),
+            self.only_type.len() > 0
+        );
+
+        // Get the sorting results
+        let results = self.get_sorting_results(
+            &self.source,
+            &self.target,
+            self.date_format.as_str(),
+            self.date_type.as_str(),
+            &self.preserve_name,
+            exclude_type,
+            only_type
+        );
+
+        // Sort the files, or dry run if specified
+        if dry_run {
+            for i in 0..results.0 {
+                println!("{:?}, {:?}", results.1[i], results.2[i]);
+            }
+        }
     }
 }
