@@ -1,0 +1,13 @@
+[package]
+name = "sorterylib"
+version = "0.0.0"
+edition = "2021"
+
+description = "A fast file-sorting library based on the Sortery command-line file sorter."
+documentation = "https://docs.rs/crate/sorterylib/"
+license = "MIT"
+repository = "https://github.com/SamMatzko/SorteryLib"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
