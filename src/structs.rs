@@ -57,6 +57,31 @@ mod tests {
     }
 }
 
+/// The DateFormat struct, used by DateFormats
+pub struct DateFormat <'a> {
+    pub format: &'a str,
+}
+
+/// The struct containing constants representing different date formats
+pub struct DateFormats;
+impl<'a> DateFormats {
+    const YEAR_MONTH_DAY: DateFormat<'a> = DateFormat { format: "%Y-%m-%d" };
+    const YEAR_MONTH_DAY_HOUR_MINUTE_SECOND: DateFormat<'a> = DateFormat { format: "%Y-%m-%d %Hh%Mm%Ss" };
+}
+
+/// The DateType struct, used by DateTypes
+pub struct DateType<'a> {
+    pub t: &'a str,
+}
+
+/// The struct containing constants representing different date types
+pub struct DateTypes;
+impl<'a> DateTypes {
+    const ACCESSED: DateType<'a> = DateType { t: "a" };
+    const CREATED: DateType<'a> = DateType { t: "c" };
+    const MODIFIED: DateType<'a> = DateType { t: "m" };
+}
+
 /// The struct used for getting the config data from a json file
 #[derive(Debug)]
 #[derive(Serialize, Deserialize)]
@@ -81,6 +106,34 @@ impl ConfigData {
             only_type: json_data.only_type,
             preserve_name: json_data.preserve_name
         }
+    }
+}
+
+/// The struct used for representing file extensions to exclude while sorting
+#[derive(Debug)]
+pub struct ExcludeTypes {
+    types: Vec<String>,
+}
+impl ExcludeTypes {
+
+    /// Create a new instance of ExcludeTypes
+    pub fn new() -> ExcludeTypes {
+        ExcludeTypes { types: vec!(String::from("⌷")) }
+    }
+
+    /// The function that adds a type to the struct.
+    pub fn add_type(mut self, t: String) -> Self {
+        self.types.push(t);
+        self
+    }
+
+    /// Return the types as a [`Vec`]
+    pub fn get_types(&self) -> Vec<String> {
+        let mut vec = Vec::new();
+        for i in 1..self.types.len() - 1 {
+            vec.push(String::from(&self.types[i]));
+        }
+        vec
     }
 }
 
@@ -163,5 +216,33 @@ impl File {
     /// Return a [`String`] representing our path
     pub fn to_string(&self) -> String {
         self.pathbuf.display().to_string()
+    }
+}
+
+/// The struct used for representing file extensions to exclusively sort
+#[derive(Debug)]
+pub struct OnlyTypes {
+    types: Vec<String>,
+}
+impl OnlyTypes {
+
+    /// Create a new instance of ExcludeTypes
+    pub fn new() -> OnlyTypes {
+        OnlyTypes { types: vec!(String::from("⌷")) }
+    }
+
+    /// The function that adds a type to the struct.
+    pub fn add_type(mut self, t: String) -> Self {
+        self.types.push(t);
+        self
+    }
+
+    /// Return the types as a [`Vec`]
+    pub fn get_types(&self) -> Vec<String> {
+        let mut vec = Vec::new();
+        for i in 1..self.types.len() - 1 {
+            vec.push(String::from(&self.types[i]));
+        }
+        vec
     }
 }

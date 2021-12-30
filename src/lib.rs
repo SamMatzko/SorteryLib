@@ -17,15 +17,15 @@ mod tests {
 /// The sorter struct that sorts the files, and interfaces with it's caller for
 /// progress bar purposes, if desired.
 pub struct Sorter<'a> {
-    pub source: &'a File,
-    pub target: &'a File,
-    pub date_format: &'a str,
-    pub date_type: &'a str,
-    pub preserve_name: &'a bool,
-    pub exclude_type: (&'a str, bool),
-    pub only_type: (&'a str, bool)
+    pub source: File,
+    pub target: File,
+    pub date_format: DateFormat<'a>,
+    pub date_type: DateType<'a>,
+    pub preserve_name: bool,
+    pub exclude_type: ExcludeTypes,
+    pub only_type: OnlyTypes
 }
-impl <'a> Sorter <'a> {
+impl<'a> Sorter<'a> {
 
     // Class functions
     pub fn from_json(&self, json: String, source: File, target: File, dry_run: bool) {
@@ -230,14 +230,14 @@ impl <'a> Sorter <'a> {
     /// The method that runs the sorting algorithm, and sends information through
     /// to the caller if specified.
     pub fn sort(&self) {
-        let results = self.get_sorting_results(
-            self.source,
-            self.target,
-            self.date_format,
-            self.date_type,
-            self.preserve_name,
-            self.exclude_type,
-            self.only_type
-        );
+        // let results = self.get_sorting_results(
+        //     &self.source,
+        //     &self.target,
+        //     self.date_format.format.as_str(),
+        //     self.date_type.t.as_str(),
+        //     &self.preserve_name,
+        //     self.exclude_type,
+        //     self.only_type
+        // );
     }
 }
