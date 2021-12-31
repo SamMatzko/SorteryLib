@@ -1,6 +1,6 @@
 [package]
 name = "sorterylib"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 description = "A fast file-sorting library based on the Sortery command-line file sorter."
