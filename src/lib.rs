@@ -2,7 +2,7 @@
 //! 
 //! Basic usage example:
 //! 
-//! ```rust
+//! ```ignore
 //! use sorterylib::prelude::*; // Import all the stuff needed for basic operation
 //! 
 //! fn main() {
@@ -129,7 +129,7 @@ impl Sorter {
     /// a JSON string. The source and target directories must be passed to [`Sorter::from_json`]
     /// as well as the json string. For example:
     /// 
-    /// ```rust
+    /// ```ignore
     /// use sorterylib::prelude::*;
     /// use std::{fs, path::Path};
     /// 
@@ -374,7 +374,7 @@ impl Sorter {
     /// sorting the files. Can be used to verify that the sorting algorithm is working
     /// as intended. For example:
     /// 
-    /// ```rust
+    /// ```ignore
     /// use sorterylib::prelude::*;
     /// 
     /// fn main() {
