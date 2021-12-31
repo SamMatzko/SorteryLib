@@ -1,3 +1,5 @@
+//! SorteryLib is a fast file-sorting library based on the Sortery command-line file sorter.
+
 #![cfg(target_os = "linux")]
 pub mod structs;
 
