@@ -1,9 +1,17 @@
-mod structs;
+#![cfg(target_os = "linux")]
+pub mod structs;
 
 use chrono::{DateTime, TimeZone, Utc, Local};
-use std::{path::Path, time::UNIX_EPOCH};
+use std::{fs, path::Path, time::UNIX_EPOCH};
 use structs::*;
 use walkdir::WalkDir;
+
+/// Includes all the stuff needed for basic operations, in one neat module.
+#[allow(unused_imports)]
+pub mod prelude {
+    pub use crate::Sorter;
+    pub use crate::structs::{File, Join};
+}
 
 /// Tests. Each test is named after the function or struct it tests, prefixed with `test_`.
 #[cfg(test)]
@@ -41,6 +49,9 @@ mod tests {
         // Compare the two Sorter instances to make sure that the JSON was parsed
         // correctly, and that the values match up.
         assert_eq!(sorter1, sorter2);
+
+        // Test the sorting algorithm
+        sorter1.sort(true);
     }
 }
 
@@ -275,7 +286,7 @@ impl Sorter {
 
     /// The method that runs the sorting algorithm, and sends information through
     /// to the caller if specified.
-    pub fn sort(&self, dry_run: bool) {
+    pub fn sort(&self, dry_run: bool) -> (usize, Vec<File>, Vec<File>) {
 
         // Convert the exclude_type and only_type values to the tuples that
         // self.get_sorting_results() takes
@@ -300,10 +311,17 @@ impl Sorter {
         );
 
         // Sort the files, or dry run if specified
-        if dry_run {
-            for i in 0..results.0 {
-                println!("{:?}, {:?}", results.1[i], results.2[i]);
+        if !dry_run {
+
+            // Make another tuple, so the vectors aren't consumed
+            let r: (usize, &Vec<File>, &Vec<File>) = (results.0, &results.1, &results.2);
+            for i in 0..r.0 {
+                fs::rename(
+                    r.1[i].to_path_buf(),
+                    r.2[i].to_path_buf()
+                ).expect("Failed to rename file.");
             }
         }
+        (results.0, results.1, results.2)
     }
 }

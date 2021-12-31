@@ -1,6 +1,7 @@
 //! Commonly-used structs.
 
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::path::{Path, PathBuf};
 
 #[cfg(test)]
@@ -150,16 +151,39 @@ impl File {
         self.pathbuf.display().to_string()
     }
 }
+impl fmt::Display for File {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.pathbuf.display())
+    }
+}
 impl<'f> From<&'f Path> for File {
     /// Return a new instance of [`File`], with `path` as the path.
     fn from(path: &Path) -> File {
         File { pathbuf: path.to_path_buf() }
     }
 }
+impl From<PathBuf> for File {
+    /// Return a new instance of [`File`], with `path` as the path.
+    fn from(path: PathBuf) -> File {
+        File { pathbuf: path }
+    }
+}
 impl<'f> From<&'f PathBuf> for File {
     /// Return a new instance of [`File`], with `path` as the path.
     fn from(path: &PathBuf) -> File {
         File { pathbuf: path.to_path_buf() }
+    }
+}
+impl<'f> From<&'f str> for File {
+    /// Return a new instance of [`File`], with `path` as the path
+    fn from(path: &str) -> File {
+        File { pathbuf: PathBuf::from(path) }
+    }
+}
+impl From<String> for File {
+    /// Return a new instance of [`File`], with `path` as the path
+    fn from(path: String) -> File {
+        File { pathbuf: PathBuf::from(path) }
     }
 }
 impl Join<File> for File {
