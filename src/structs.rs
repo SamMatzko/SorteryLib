@@ -58,7 +58,8 @@ mod tests {
     }
 }
 
-/// The struct used for getting the config data from a json file
+/// The struct used for getting the config data from a JSON [`String`]. Future versions
+/// will be able to load JSON data directly from a JSON file.
 #[derive(Debug)]
 #[derive(Serialize, Deserialize)]
 pub struct ConfigData {
@@ -71,6 +72,30 @@ pub struct ConfigData {
 impl ConfigData {
 
     /// Return an instance of ConfigData from the data in [`String`] `json`.
+    /// Example:
+    /// 
+    /// ```
+    /// use sorterylib::structs::ConfigData;
+    /// 
+    /// fn main() {
+    /// 
+    ///     // The JSON string
+    ///     let json_string = String::from("
+    ///     {
+    ///         \"date_format\": \"%Y-%m-%d %Hh%Mm%Ss\",
+    ///         \"date_type\": \"m\",
+    ///         \"exclude_type\": [\"png\"],
+    ///         \"only_type\": [\"json\", \"py\"],
+    ///         \"preserve_name\": false
+    ///     }");
+    /// 
+    ///     // Load the JSON string
+    ///     let config_data = ConfigData::from_json(&json_string);
+    /// }
+    /// ```
+    /// 
+    /// **NOTE:** the backslashes are only needed when defining a [`String`] from
+    /// a string literal like this. The JSON file will not need them.
     pub fn from_json(json: &String) -> ConfigData {
 
         let json_data: ConfigData = serde_json::from_str(json.as_str()).expect("Failed to parse json.");
@@ -90,7 +115,10 @@ pub trait Join<T> {
     fn join(&self, path:T) -> File;
 }
 
-/// The struct used in all the cross-function path functionality
+/// [`File`] is designed to be as easy-to-use as possible. It supports the default
+/// formatter `"{}"` (used with [`println!`]), can be created from many different
+/// types, and can be joined with many different types. It underlies all file-related
+/// operations in `SorteryLib`.
 #[derive(Debug)]
 #[derive(PartialEq)]
 pub struct File {
@@ -98,12 +126,13 @@ pub struct File {
 }
 impl File {
 
-    /// Return an instance of File with the same path as ours
+    /// Returns an instance of [`File`] with the same path as ours. Used to resolve
+    /// ownership problems.
     pub fn copy(&self) -> File {
         File { pathbuf: PathBuf::from(&self.pathbuf) }
     }
 
-    /// Return [`true`] if our path exists
+    /// Return [`true`] if our path exists, [`false`] if it does not.
     pub fn exists(&self) -> bool {
         if self.pathbuf.exists() {
             return true;
@@ -112,7 +141,16 @@ impl File {
         }
     }
 
-    /// Return a [`String`] representing the extension of our path
+    /// Return a [`String`] representing the extension of our path. For example:
+    /// 
+    /// ```
+    /// use sorterylib::prelude::*;
+    /// 
+    /// fn main() {
+    ///     let file = File::from("test.txt");
+    ///     assert_eq!(file.extension(), String::from("txt"));
+    /// }
+    /// ```
     pub fn extension(&self) -> String {
         match self.pathbuf.as_path().extension() {
             None => return String::from(""),
@@ -120,7 +158,16 @@ impl File {
         }
     }
 
-    /// Return the file name of our path
+    /// Return a [`String`] representing the file name of our path. For example:
+    /// 
+    /// ```
+    /// use sorterylib::prelude::*;
+    /// 
+    /// fn main() {
+    ///     let file = File::from("/path/to/test.txt");
+    ///     assert_eq!(file.file_name(), String::from("test.txt"));
+    /// }
+    /// ```
     pub fn file_name(&self) -> String {
         match self.pathbuf.as_path().file_name() {
             None => return String::from(""),
@@ -128,7 +175,16 @@ impl File {
         }
     }
 
-    /// Return a [`String`] representing the file stem of our path
+    /// Return a [`String`] representing the file stem of our path. For example:
+    /// 
+    /// ```
+    /// use sorterylib::prelude::*;
+    /// 
+    /// fn main() {
+    ///     let file = File::from("test.txt");
+    ///     assert_eq!(file.file_stem(), String::from("test"));
+    /// }
+    /// ```
     pub fn file_stem(&self) -> String {
         match self.pathbuf.as_path().file_stem() {
             None => return String::from(""),
@@ -136,17 +192,44 @@ impl File {
         }
     }
 
-    /// Return a new instance of [`File`] from `from`
+    /// DEPRECATED: Please use [`File::from`] instead.
+    /// Return a new instance of [`File`] from `from`. For example:
+    /// 
+    /// ```
+    /// use sorterylib::prelude::*;
+    /// 
+    /// fn main() {
+    ///     let file = File::new("test.txt");
+    /// }
+    /// ```
     pub fn new(from: &str) -> File {
         File { pathbuf: PathBuf::from(from) }
     }
 
-    /// Return an instance of [`PathBuf`] representing our path
+    /// Return an instance of [`PathBuf`] representing our path. For example:
+    /// 
+    /// ```
+    /// use sorterylib::prelude::*;
+    /// use std::path::PathBuf;
+    /// 
+    /// fn main() {
+    ///     let file = File::from("test.txt");
+    ///     assert_eq!(file.to_path_buf(), PathBuf::from("test.txt"));
+    /// }
+    /// ```
     pub fn to_path_buf(&self) -> PathBuf {
         PathBuf::from(&self.pathbuf)
     }
     
-    /// Return a [`String`] representing our path
+    /// Return a [`String`] representing our path. For example:
+    /// 
+    /// ```
+    /// use sorterylib::prelude::*;
+    /// 
+    /// fn main() {
+    ///     let file = File::from("test.txt");
+    ///     assert_eq!(file.to_string(), String::from("test.txt"));
+    /// }
     pub fn to_string(&self) -> String {
         self.pathbuf.display().to_string()
     }
@@ -187,6 +270,7 @@ impl From<String> for File {
     }
 }
 impl Join<File> for File {
+    /// Return an instance of [`File`] representing the joining of our path and `path`.
     fn join(&self, path: File) -> File {
         let join_start = self.to_path_buf();
         let join_end = path.to_path_buf();
@@ -195,6 +279,7 @@ impl Join<File> for File {
     }
 }
 impl<'j> Join<&'j Path> for File {
+    /// Return an instance of [`File`] representing the joining of our path and `path`.
     fn join(&self, path: &Path) -> File {
         let join_start = self.to_path_buf();
         let join_end = path.to_path_buf();
@@ -203,6 +288,7 @@ impl<'j> Join<&'j Path> for File {
     }
 }
 impl<'j> Join<&'j PathBuf> for File {
+    /// Return an instance of [`File`] representing the joining of our path and `path`.
     fn join(&self, path: &PathBuf) -> File {
         let join_start = self.to_path_buf();
         let pathbuf = join_start.join(path);
@@ -210,6 +296,7 @@ impl<'j> Join<&'j PathBuf> for File {
     }
 }
 impl Join<String> for File {
+    /// Return an instance of [`File`] representing the joining of our path and `path`.
     fn join(&self, path: String) -> File {
         let join_start = self.to_path_buf();
         let join_end = PathBuf::from(path);
