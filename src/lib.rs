@@ -33,9 +33,11 @@
 //! 
 //! You can find more detailed descriptions of the fields on the [`Sorter`] page.
 
+mod errors;
 pub mod structs;
 
 use chrono::{DateTime, TimeZone, Utc, Local};
+use errors::*;
 use filetime::FileTime;
 use std::{fs, path::Path};
 use structs::*;
@@ -289,7 +291,19 @@ impl Sorter {
         date_type: &str,
         preserve_name: &bool,
         exclude_type: (&str, bool),
-        only_type: (&str, bool)) -> (usize, Vec<File>, Vec<File>) {
+        only_type: (&str, bool)) -> Result<(usize, Vec<File>, Vec<File>), PathDoesNotExistError> {
+
+        // Return error messages if either source or target don't exist
+        if !source.exists() {
+            return Err(PathDoesNotExistError {
+                path: source.to_string(),
+            })
+        }
+        if !target.exists() {
+            return Err(PathDoesNotExistError {
+                path: target.to_string()
+            })
+        }
 
         // The vector to return: a tuple of (old_filename, new_filename)
         let mut vec_old: Vec<File> = Vec::new();
@@ -333,7 +347,7 @@ impl Sorter {
                 }
             }
         }
-        (items_to_sort, vec_old, vec_new)
+        Ok((items_to_sort, vec_old, vec_new))
     }
 
     /// Return [`true`] if:
@@ -414,6 +428,12 @@ impl Sorter {
             exclude_type,
             only_type
         );
+
+        match results {
+            Ok(ref result) => result,
+            Err(error) => panic!("{}", error),
+        };
+        let results = results.unwrap();
 
         // Sort the files, or dry run if specified
         if !dry_run {
