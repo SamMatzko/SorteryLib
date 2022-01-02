@@ -1,4 +1,4 @@
-//! SorteryLib is a fast file-sorting library based on the Sortery command-line file sorter.
+//! SorteryLib is a fast, cross-platform file-sorting library based on the Sortery command-line file sorter.
 //! 
 //! Basic usage example:
 //! 
@@ -33,11 +33,11 @@
 //! 
 //! You can find more detailed descriptions of the fields on the [`Sorter`] page.
 
-#![cfg(target_os = "linux")]
 pub mod structs;
 
 use chrono::{DateTime, TimeZone, Utc, Local};
-use std::{fs, path::Path, time::UNIX_EPOCH};
+use filetime::FileTime;
+use std::{fs, path::Path};
 use structs::*;
 use walkdir::WalkDir;
 
@@ -189,29 +189,31 @@ impl Sorter {
         mytime
     }
 
-    /// Return the access date and time of `path` as the number of seconds since the
-    /// UNIX epoch.
+    /// Return the access date and time of `path` as the number of seconds since the epoch.
+    /// Now works cross-platform.
     fn get_epoch_secs_access(&self, path: &File) -> i64 {
-        let ctime_system = path.pathbuf.metadata().unwrap().accessed().expect("Failed to get atime");
-        let secs: i64 = ctime_system.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
+        let metadata = path.pathbuf.metadata().unwrap();
+        let secs: i64 = FileTime::from_last_access_time(&metadata).seconds() as i64;
 
         secs
     }
     
-    /// Return the creation date and time of `path` as the number of seconds since the
-    /// UNIX epoch.
+    /// Return the creation date and time of `path` as the number of seconds since the epoch.
+    /// Now works cross-platform.
     fn get_epoch_secs_creation(&self, path: &File) -> i64 {
-        let ctime_system = path.pathbuf.metadata().unwrap().created().expect("Failed to get ctime");
-        let secs: i64 = ctime_system.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
+        let metadata = path.pathbuf.metadata().unwrap();
+        let secs: i64 = FileTime::from_creation_time(&metadata).expect("Failed to get ctime.").seconds() as i64;
 
         secs
     }
 
-    /// Return the modification date and time of `path` as the number of seconds since the
-    /// UNIX epoch.
+    /// Return the modification date and time of `path` as the number of seconds since the epoch.
+    /// Now works cross-platform.
     fn get_epoch_secs_modified(&self, path: &File) -> i64 {
-        let ctime_system = path.pathbuf.metadata().unwrap().modified().expect("Failed to get mtime");
-        let secs: i64 = ctime_system.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
+        let metadata = path.pathbuf.metadata().unwrap();
+        let secs: i64 = FileTime::from_last_modification_time(&metadata).seconds() as i64;
+        println!("secs: {} timestamp: {}", secs, 1641033122);
+        println!("{}", secs < 1641033122);
 
         secs
     }

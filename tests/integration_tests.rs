@@ -1,6 +1,8 @@
 /// Tests for integration.
+use chrono::{DateTime, Utc};
+use filetime;
 use sorterylib::prelude::*;
-use std::env;
+use std::{env, time::SystemTime};
 
 #[test]
 fn test_sorter_dry_run() {
@@ -28,6 +30,42 @@ fn test_sorter_dry_run() {
         only_type: only_type
     };
 
+    // Create the old and new path names for each file that's being sorted
+    let old_test_jpg = source.join(File::new("test.jpg"));
+    let new_test_jpg = source.join(File::new("target/2022/01/2022 test.jpg"));
+    let old_test = source.join(File::new("test"));
+    let new_test = source.join(File::new("target/2022/01/2022 test."));
+    let old_files_test = source.join(File::new("files/test"));
+    let new_files_test = source.join(File::new("target/2022/01/2022 test_2."));
+    let old_test_png = source.join(File::new("test.png"));
+    let new_test_png = source.join(File::new("target/2022/01/2022 test.png"));
+
+    // Get the DateTime to which to set the modification time of all the files for testing
+    let system_time: SystemTime = DateTime::parse_from_rfc2822("Sat, 1 Jan 2022 10:32:02 +0000").unwrap().into();
+    let date_time = DateTime::<Utc>::from(system_time);
+    
+    // Print debugging information. Only shows if the test fails.
+    println!("{}", date_time.timestamp());
+    println!("{:?}", date_time.format("%a, %d %b %Y %H:%M:%S").to_string());
+
+    // Set the modification times of the files we're sorting
+    filetime::set_file_mtime(
+        old_test_jpg.to_string(),
+        filetime::FileTime::from(system_time)
+    ).expect("Failed to set modification time of file.");
+    filetime::set_file_mtime(
+        old_test.to_string(),
+        filetime::FileTime::from(system_time)
+    ).expect("Failed to set modification time of file.");
+    filetime::set_file_mtime(
+        old_files_test.to_string(),
+        filetime::FileTime::from(system_time)
+    ).expect("Failed to set modification time of file.");
+    filetime::set_file_mtime(
+        old_test_png.to_string(),
+        filetime::FileTime::from(system_time)
+    ).expect("Failed to set modification time of file.");
+
     // Test the sorting algorithm
     let results = sorter.sort(true);
     let (old, new) = (results.1, results.2);
@@ -35,10 +73,10 @@ fn test_sorter_dry_run() {
     for i in 0..results.0 {
         println!("{}, {}", old[i], new[i]);
     }
-    assert_eq!((old[0].copy(), new[0].copy()), (source.join(File::new("test.jpg")), source.join(File::new("target/2021/02/2021 test.jpg"))));
-    assert_eq!((old[1].copy(), new[1].copy()), (source.join(File::new("test")), source.join(File::new("target/2021/02/2021 test."))));
-    assert_eq!((old[2].copy(), new[2].copy()), (source.join(File::new("files/test")), source.join(File::new("target/2021/02/2021 test_2."))));
-    assert_eq!((old[3].copy(), new[3].copy()), (source.join(File::new("test.png")), source.join(File::new("target/2021/02/2021 test.png"))));
+    assert_eq!((old[0].copy(), new[0].copy()), (old_test_jpg, new_test_jpg));
+    assert_eq!((old[1].copy(), new[1].copy()), (old_test, new_test));
+    assert_eq!((old[2].copy(), new[2].copy()), (old_files_test, new_files_test));
+    assert_eq!((old[3].copy(), new[3].copy()), (old_test_png, new_test_png));
     assert_eq!(results.0, 4);
     assert_eq!(old.len(), 4);
     assert_eq!(new.len(), 4);
