@@ -152,6 +152,23 @@ impl Sorter {
     /// }
     /// ```
     /// 
+    /// In the `SorteryLib` directory, there is a file called `template.json` This
+    /// should be used as a base for all JSON configuration files. Here is what
+    /// `template.json` looks like:
+    /// 
+    /// ```
+    /// {
+    ///     "date_format": "%Y-%m-%d %Hh%Mm%Ss",
+    ///     "date_type": "m",
+    ///     "exclude_type": ["png"],
+    ///     "only_type": ["json", "py"],
+    ///     "preserve_name": false
+    /// }
+    /// ```
+    /// 
+    /// The names in the JSON file correspond with the [`Sorter`] fields of the same
+    /// names.
+    /// 
     /// In future versions, a JSON file will be able to be passed instead of a JSON [`String`].
     pub fn from_json(json_string: String, source: File, target: File) -> Sorter {
 
