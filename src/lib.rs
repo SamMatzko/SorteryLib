@@ -46,14 +46,14 @@ use walkdir::WalkDir;
 /// Includes all the stuff needed for basic operations, in one neat module.
 #[allow(unused_imports)]
 pub mod prelude {
-    pub use crate::Sorter;
+    pub use crate::{FromJson, Sorter};
     pub use crate::structs::{File, Join};
 }
 
 /// Tests. Each test is named after the function or struct it tests, prefixed with `test_`.
 #[cfg(test)]
 mod tests {
-    use crate::Sorter;
+    use crate::{FromJson, Sorter};
     use std::{env, fs, path::Path};
     use super::structs::*;
 
@@ -92,6 +92,11 @@ mod tests {
     }
 }
 
+/// The trait used by [`Sorter`] to either parse a JSON string or a JSON file
+pub trait FromJson<T> {
+    fn from_json(json: T, source: File, target: File) -> Sorter;
+}
+
 /// The sorter struct that sorts the files. There are two ways to create an instance
 /// of [`Sorter`]: passing the individual fields, and using [`Sorter::from_json`].
 #[derive(Debug, PartialEq)]
@@ -124,69 +129,6 @@ pub struct Sorter {
     pub only_type: Vec<String>
 }
 impl Sorter {
-
-    // Class functions
-
-    /// Return a new [`Sorter`] instance, created using the configuration data in
-    /// a JSON string. The source and target directories must be passed to [`Sorter::from_json`]
-    /// as well as the json string. For example:
-    /// 
-    /// ```ignore
-    /// use sorterylib::prelude::*;
-    /// use std::{fs, path::Path};
-    /// 
-    /// fn main() {
-    /// 
-    ///     // The path to the JSON file
-    ///     let json_path = Path::new("test.json");
-    /// 
-    ///     // Load the JSON string from the JSON file
-    ///     let json_string = fs::read_to_string(json_path).expect("Failed to read file");
-    /// 
-    ///     // Create a Sorter instance based on the json file
-    ///     let sorter = Sorter::from_json(
-    ///         json_string,
-    ///         File::from("/path/to/source/dir/"), // The source directory
-    ///         File::from("/path/to/target/dir/") // The target directory
-    ///     );
-    /// }
-    /// ```
-    /// 
-    /// In the `SorteryLib` directory, there is a file called `template.json` This
-    /// should be used as a base for all JSON configuration files. Here is what
-    /// `template.json` looks like:
-    /// 
-    /// ```
-    /// {
-    ///     "date_format": "%Y-%m-%d %Hh%Mm%Ss",
-    ///     "date_type": "m",
-    ///     "exclude_type": ["png"],
-    ///     "only_type": ["json", "py"],
-    ///     "preserve_name": false
-    /// }
-    /// ```
-    /// 
-    /// The names in the JSON file correspond with the [`Sorter`] fields of the same
-    /// names.
-    /// 
-    /// In future versions, a JSON file will be able to be passed instead of a JSON [`String`].
-    pub fn from_json(json_string: String, source: File, target: File) -> Sorter {
-
-        // Get the data from the JSON string
-        let data = ConfigData::from_json(&json_string);
-
-        Sorter {
-            source: source,
-            target: target,
-            date_format: data.date_format,
-            date_type: data.date_type,
-            preserve_name: data.preserve_name,
-            exclude_type: data.exclude_type,
-            only_type: data.only_type
-        }
-    }
-
-    // Methods
 
     /// Return a [`DateTime`] instance representing the creation, modification,
     /// or access time of `path` according to `date_type`.
@@ -468,5 +410,106 @@ impl Sorter {
             }
         }
         (results.0, results.1, results.2)
+    }
+}
+impl FromJson<File> for Sorter {
+
+    /// In the `SorteryLib` directory, there is a file called `template.json` This
+    /// should be used as a base for all JSON configuration files. Here is what
+    /// `template.json` looks like:
+    /// 
+    /// ```ignore
+    /// {
+    ///     "date_format": "%Y-%m-%d %Hh%Mm%Ss",
+    ///     "date_type": "m",
+    ///     "exclude_type": ["png"],
+    ///     "only_type": ["json", "py"],
+    ///     "preserve_name": false
+    /// }
+    /// ```
+    /// 
+    /// The items in the JSON file correspond with the fields in [`Sorter`] of the
+    /// same names.
+    /// 
+    /// Return a new [`Sorter`] instance, created using the configuration data in
+    /// a JSON [`File`] passed to the `json` argument. The source and target
+    /// directories must be passed to [`Sorter::from_json`] as well. For example:
+    /// 
+    /// ```ignore
+    /// use sorterylib::prelude::*;
+    /// use std::{fs, path::Path};
+    /// 
+    /// fn main() {
+    /// 
+    ///     // The path to the JSON file
+    ///     let json_file = File::from("test.json");
+    /// 
+    ///     // Create a Sorter instance based on the json file
+    ///     let sorter = Sorter::from_json(
+    ///         json_file,
+    ///         File::from("/path/to/source/dir/"), // The source directory
+    ///         File::from("/path/to/target/dir/") // The target directory
+    ///     );
+    /// }
+    /// ```
+    fn from_json(json: File, source: File, target: File) -> Sorter {
+
+        // Get the String from the file
+        let json_string = fs::read_to_string(json.to_path_buf()).expect("Failed to read JSON file.");
+
+        // Get the data from the JSON string
+        let data = ConfigData::from_json(&json_string);
+
+        Sorter {
+            source: source,
+            target: target,
+            date_format: data.date_format,
+            date_type: data.date_type,
+            preserve_name: data.preserve_name,
+            exclude_type: data.exclude_type,
+            only_type: data.only_type
+        }
+    }
+}
+impl FromJson<String> for Sorter {
+
+    /// Return a new [`Sorter`] instance, created using the configuration data in
+    /// a JSON [`String`] passed to the `json` argument. The source and target
+    /// directories must be passed to [`Sorter::from_json`] as well. For example:
+    /// 
+    /// ```ignore
+    /// use sorterylib::prelude::*;
+    /// use std::{fs, path::Path};
+    /// 
+    /// fn main() {
+    /// 
+    ///     // The path to the JSON file
+    ///     let json_path = Path::new("test.json");
+    /// 
+    ///     // Load the JSON string from the JSON file
+    ///     let json_string = fs::read_to_string(json_path).expect("Failed to read file");
+    /// 
+    ///     // Create a Sorter instance based on the json file
+    ///     let sorter = Sorter::from_json(
+    ///         json_string,
+    ///         File::from("/path/to/source/dir/"), // The source directory
+    ///         File::from("/path/to/target/dir/") // The target directory
+    ///     );
+    /// }
+    /// ```
+    fn from_json(json_string: String, source: File, target: File) -> Sorter {
+
+        // Get the data from the JSON string
+        let data = ConfigData::from_json(&json_string);
+
+        Sorter {
+            source: source,
+            target: target,
+            date_format: data.date_format,
+            date_type: data.date_type,
+            preserve_name: data.preserve_name,
+            exclude_type: data.exclude_type,
+            only_type: data.only_type
+        }
     }
 }
