@@ -1,5 +1,5 @@
 # SorteryLib
-A fast file-sorting library based on the Sortery command-line file sorter. Along with fast sorting, SorteryLib comes with an easy-to-use `File` type, which is compatible with many other types, such as `String`, `str`, `std::path::Path`, `std::path::PathBuf`, and of course `File`.
+A fast file-sorting library based on the Sortery command-line file sorter. Along with fast sorting, SorteryLib comes with an easy-to-use `File` type, which is compatible with many other types, such as `String`, `str`, `std::path::Path`, `std::path::PathBuf`, and of course the `File` type itself.
 
 # Basic Usage
 
