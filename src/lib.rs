@@ -485,7 +485,7 @@ impl Sorter {
     /// }
     pub fn sort_with_callback(
         &self, dry_run: bool,
-        mut callback: impl FnMut((usize, usize, usize))) -> (usize, Vec<File>, Vec<File>) {
+        callback: impl FnMut((usize, usize, usize))) -> (usize, Vec<File>, Vec<File>) {
 
         self.sort_base(dry_run, callback)
     }
