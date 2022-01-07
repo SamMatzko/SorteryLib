@@ -92,6 +92,10 @@ mod tests {
     }
 }
 
+/// This is a private function used in case the user doesn't supply a progress
+/// update callback.
+fn callback_fn(_data: (usize, usize, usize)) { }
+
 /// The trait used by [`Sorter`] to either parse a JSON string or a JSON file
 pub trait FromJson<T> {
     fn from_json(json: T, source: File, target: File) -> Sorter;
@@ -338,33 +342,15 @@ impl Sorter {
         }
         to_return
     }
+    
+    /// The base sorting algorithm. This a private function, called by [`Sorter::sort`]
+    /// and [`Sorter::sort_with_callback`].
+    fn sort_base(&self, dry_run: bool, mut callback: impl FnMut((usize, usize, usize))) -> (usize, Vec<File>, Vec<File>) {
 
-    /// The method that runs the sorting algorithm. Returns the sorting results as
-    /// a tuple of ([`usize`], [`Vec<String>`], [`Vec<String>`]), where `results.0`
-    /// is the number of items sorted, `results.1` contains all the old file names,
-    /// and `results.2` contains all the new file names. The two vectors correspond
-    /// index-wise, so `results.1[0]` is renamed to `results.2[0]`, etc.
-    /// 
-    /// If `dry_run` is [`true`], return the results as usual, but without acutally
-    /// sorting the files. Can be used to verify that the sorting algorithm is working
-    /// as intended. For example:
-    /// 
-    /// ```ignore
-    /// use sorterylib::prelude::*;
-    /// 
-    /// fn main() {
-    /// 
-    ///     // The sorter instance
-    ///     let sorter = Sorter { ... };
-    /// 
-    ///     // Dry run, without actually sorting the files
-    ///     sorter.sort(true);
-    /// 
-    ///     // Acutally sort the files
-    ///     sorter.sort(false);
-    /// }
-    /// ```
-    pub fn sort(&self, dry_run: bool) -> (usize, Vec<File>, Vec<File>) {
+        // The variables for calculating percent completed and discerning when next
+        // to call the callback
+        let mut current_percent: usize = 0;
+        let mut last_percent: usize = current_percent;
 
         // Convert the exclude_type and only_type values to the tuples that
         // self.get_sorting_results() takes
@@ -397,19 +383,111 @@ impl Sorter {
         };
         let results = results.unwrap();
 
-        // Sort the files, or dry run if specified
-        if !dry_run {
+        // Make another tuple, so the vectors aren't consumed
+        let r: (usize, &Vec<File>, &Vec<File>) = (results.0, &results.1, &results.2);
 
-            // Make another tuple, so the vectors aren't consumed
-            let r: (usize, &Vec<File>, &Vec<File>) = (results.0, &results.1, &results.2);
-            for i in 0..r.0 {
+        // Loop through all the files in the vectors and sort them, or dry-run if specified
+        for i in 0..r.0 {
+
+            // Only actually sort the files if dry_run is not true.
+            if !dry_run {
                 fs::rename(
                     r.1[i].to_path_buf(),
                     r.2[i].to_path_buf()
                 ).expect("Failed to rename file.");
             }
+
+            // Calculate the percent, and run the callback if necessary
+            current_percent = ((100 as f32 / r.0 as f32) * i as f32) as usize;
+
+            if current_percent > last_percent {
+                // Run the callback, calculating the completion percent
+                callback(
+                    (
+                        i,
+                        r.0,
+                        ((100 as f32 / r.0 as f32) * i as f32) as usize
+                    )
+                );
+            }
+
+            last_percent = current_percent;
+
         }
+
+        // Call the callback for the last time
+        callback(
+            (
+                r.0,
+                r.0,
+                100
+            )
+        );
         (results.0, results.1, results.2)
+    }
+
+    /// The method that runs the sorting algorithm. Returns the sorting results as
+    /// a tuple of ([`usize`], [`Vec<String>`], [`Vec<String>`]), where `results.0`
+    /// is the number of items sorted, `results.1` contains all the old file names,
+    /// and `results.2` contains all the new file names. The two vectors correspond
+    /// index-wise, so `results.1[0]` is renamed to `results.2[0]`, etc.
+    /// 
+    /// If `dry_run` is [`true`], return the results as usual, but without acutally
+    /// sorting the files. Can be used to verify that the sorting algorithm is working
+    /// as intended. For example:
+    /// 
+    /// ```ignore
+    /// use sorterylib::prelude::*;
+    /// 
+    /// fn main() {
+    /// 
+    ///     // The sorter instance
+    ///     let sorter = Sorter { ... };
+    /// 
+    ///     // Dry run, without actually sorting the files
+    ///     sorter.sort(true);
+    /// 
+    ///     // Acutally sort the files
+    ///     sorter.sort(false);
+    /// }
+    /// ```
+    pub fn sort(&self, dry_run: bool) -> (usize, Vec<File>, Vec<File>) {
+        self.sort_base(dry_run, callback_fn)
+    }
+
+    /// The same as [`Sorter::sort`], but also takes a function argument that is
+    /// called every time the progress percentage is increased by one.
+    /// 
+    /// The callback function must take one argument of the type [`(usize, usize, usize)`],
+    /// where `arg.0` is the total number of items to sort, `arg.1` is the number
+    /// of items sorted, and `arg.2` is the percent completed. The callback function
+    /// must not return anything.
+    /// 
+    /// Example:
+    /// 
+    /// ```ignore
+    /// use sorterylib::prelude::*;
+    /// 
+    /// fn callback(args: (usize, usize, usize)) {
+    ///     println!("{:?}", args);
+    /// }
+    /// 
+    /// fn main() {
+    /// 
+    ///     // The sorter instance
+    ///     let sorter = Sorter { ... };
+    /// 
+    ///     // Dry run, without actually sorting the files
+    ///     sorter.sort(true);
+    /// 
+    ///     // Acutally sort the files
+    ///     sorter.sort(false, callback);
+    /// }
+    pub fn sort_with_callback(
+        &self, dry_run: bool,
+        mut callback: impl FnMut((usize, usize, usize))) -> (usize, Vec<File>, Vec<File>) {
+
+        self.sort_base(dry_run, callback)
     }
 }
 impl FromJson<File> for Sorter {
