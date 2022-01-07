@@ -342,6 +342,35 @@ impl Sorter {
         }
         to_return
     }
+
+    /// The method that runs the sorting algorithm. Returns the sorting results as
+    /// a tuple of ([`usize`], [`Vec<String>`], [`Vec<String>`]), where `results.0`
+    /// is the number of items sorted, `results.1` contains all the old file names,
+    /// and `results.2` contains all the new file names. The two vectors correspond
+    /// index-wise, so `results.1[0]` is renamed to `results.2[0]`, etc.
+    /// 
+    /// If `dry_run` is [`true`], return the results as usual, but without acutally
+    /// sorting the files. Can be used to verify that the sorting algorithm is working
+    /// as intended. For example:
+    /// 
+    /// ```ignore
+    /// use sorterylib::prelude::*;
+    /// 
+    /// fn main() {
+    /// 
+    ///     // The sorter instance
+    ///     let sorter = Sorter { ... };
+    /// 
+    ///     // Dry run, without actually sorting the files
+    ///     sorter.sort(true);
+    /// 
+    ///     // Acutally sort the files
+    ///     sorter.sort(false);
+    /// }
+    /// ```
+    pub fn sort(&self, dry_run: bool) -> (usize, Vec<File>, Vec<File>) {
+        self.sort_base(dry_run, callback_fn)
+    }
     
     /// The base sorting algorithm. This a private function, called by [`Sorter::sort`]
     /// and [`Sorter::sort_with_callback`].
@@ -426,35 +455,6 @@ impl Sorter {
         (results.0, results.1, results.2)
     }
 
-    /// The method that runs the sorting algorithm. Returns the sorting results as
-    /// a tuple of ([`usize`], [`Vec<String>`], [`Vec<String>`]), where `results.0`
-    /// is the number of items sorted, `results.1` contains all the old file names,
-    /// and `results.2` contains all the new file names. The two vectors correspond
-    /// index-wise, so `results.1[0]` is renamed to `results.2[0]`, etc.
-    /// 
-    /// If `dry_run` is [`true`], return the results as usual, but without acutally
-    /// sorting the files. Can be used to verify that the sorting algorithm is working
-    /// as intended. For example:
-    /// 
-    /// ```ignore
-    /// use sorterylib::prelude::*;
-    /// 
-    /// fn main() {
-    /// 
-    ///     // The sorter instance
-    ///     let sorter = Sorter { ... };
-    /// 
-    ///     // Dry run, without actually sorting the files
-    ///     sorter.sort(true);
-    /// 
-    ///     // Acutally sort the files
-    ///     sorter.sort(false);
-    /// }
-    /// ```
-    pub fn sort(&self, dry_run: bool) -> (usize, Vec<File>, Vec<File>) {
-        self.sort_base(dry_run, callback_fn)
-    }
-
     /// The same as [`Sorter::sort`], but also takes a function argument that is
     /// called every time the progress percentage is increased by one.
     /// 
@@ -478,14 +478,14 @@ impl Sorter {
     ///     let sorter = Sorter { ... };
     /// 
     ///     // Dry run, without actually sorting the files
-    ///     sorter.sort(true);
+    ///     sorter.sort(true, callback);
     /// 
     ///     // Acutally sort the files
     ///     sorter.sort(false, callback);
     /// }
     pub fn sort_with_callback(
         &self, dry_run: bool,
-        mut callback: impl FnMut((usize, usize, usize))) -> (usize, Vec<File>, Vec<File>) {
+        callback: impl FnMut((usize, usize, usize))) -> (usize, Vec<File>, Vec<File>) {
 
         self.sort_base(dry_run, callback)
     }
