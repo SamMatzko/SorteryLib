@@ -4,6 +4,11 @@ use filetime;
 use sorterylib::prelude::*;
 use std::{env, time::SystemTime};
 
+fn callback(data: (usize, usize, usize), v: &mut Vec<(usize, usize, usize)>) {
+    println!("{:?}", data);
+    v.push(data);
+}
+
 #[test]
 fn test_sorter_dry_run() {
     
@@ -66,8 +71,17 @@ fn test_sorter_dry_run() {
         filetime::FileTime::from(system_time)
     ).expect("Failed to set modification time of file.");
 
-    // Test the sorting algorithm
-    let results = sorter.sort(true);
+    // The vector for testing the callback
+    let mut v: Vec<(usize, usize, usize)> = Vec::new();
+
+    // Test the sorting algorithm and it's callback
+    let results = sorter.sort_with_callback(true, |data| {
+        callback(data, &mut v);
+    });
+
+    // Test the callback output by making sure that the vector is what it should be
+    assert_eq!(v, vec![(1, 4, 25), (2, 4, 50), (3, 4, 75), (4, 4, 100)]);
+    
     let (old, new) = (results.1, results.2);
 
     for i in 0..results.0 {
