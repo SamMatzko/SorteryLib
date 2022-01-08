@@ -478,10 +478,10 @@ impl Sorter {
     ///     let sorter = Sorter { ... };
     /// 
     ///     // Dry run, without actually sorting the files
-    ///     sorter.sort(true, callback);
+    ///     sorter.sort_with_callback(true, callback);
     /// 
     ///     // Acutally sort the files
-    ///     sorter.sort(false, callback);
+    ///     sorter.sort_with_callback(false, callback);
     /// }
     pub fn sort_with_callback(
         &self, dry_run: bool,
