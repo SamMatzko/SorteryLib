@@ -3,8 +3,10 @@ name = "sorterylib"
 version = "0.3.2"
 edition = "2021"
 
+categories = ["algorithms", "filesystem"]
 description = "A fast, basic, cross-platform file sorter library."
 documentation = "https://docs.rs/crate/sorterylib/"
+keywords = ["file", "sort", "cross platform", "filesystem"]
 license = "MIT"
 repository = "https://github.com/SamMatzko/SorteryLib"
 
