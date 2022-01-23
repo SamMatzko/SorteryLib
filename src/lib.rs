@@ -254,7 +254,7 @@ impl Sorter {
         date_type: &str,
         preserve_name: &bool,
         exclude_type: (&str, bool),
-        only_type: (&str, bool)) -> Result<(usize, Vec<File>, Vec<File>), PathDoesNotExistError> {
+        mut only_type: (&str, bool)) -> Result<(usize, Vec<File>, Vec<File>), PathDoesNotExistError> {
 
         // Return error messages if either source or target don't exist
         if !source.exists() {
@@ -268,6 +268,9 @@ impl Sorter {
             })
         }
 
+        // Make sure that the only_type bool is false if it's str is empty
+        if only_type.0 == "" { only_type.1 = false; }
+
         // The vector to return: a tuple of (old_filename, new_filename)
         let mut vec_old: Vec<File> = Vec::new();
         let mut vec_new: Vec<File> = Vec::new();
@@ -280,7 +283,7 @@ impl Sorter {
             if !entry.metadata().expect("Failed to get dir metadata").is_dir() {
                 if self.is_sortable(&File::from(entry.path()), &exclude_type, &only_type) {
                     items_to_sort += 1;
-               }
+                }
             }
         }
         
