@@ -12,7 +12,7 @@ fn callback(data: (usize, usize, usize), v: &mut Vec<(usize, usize, usize)>) {
 #[test]
 fn test_sorter_dry_run() {
     
-    // The path to the JSON template; used for testing
+    // The containing directory
     let current_dir = File::from(env::current_dir().expect("Failed to get current dir."));
     
     // The parameters for testing
@@ -22,7 +22,7 @@ fn test_sorter_dry_run() {
     let date_type = String::from("m");
     let preserve_name = true;
     let exclude_type = vec![String::from("txt")];
-    let only_type = Vec::new();
+    let only_type: Vec<String> = vec![String::from("")];
 
     // Create a [`Sorter`] instance from the json, and test it
     let sorter = Sorter {
@@ -34,6 +34,9 @@ fn test_sorter_dry_run() {
         exclude_type: exclude_type,
         only_type: only_type
     };
+
+    // This is just for debugging when there is a failing test
+    println!("{:?}", &sorter);
 
     // Create the old and new path names for each file that's being sorted
     let old_test_jpg = source.join(File::new("test.jpg"));
